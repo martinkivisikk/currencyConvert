@@ -1,11 +1,12 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
+from PyQt5 import QtCore
 import sys
 import requests
-from pyqtgraph import PlotWidget, plot
-import pyqtgraph as pg
-from PyQt5 import QtCore
-import datetime
+import datetime as dt
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from krüpto import *
 
 class Valuutad:
 
@@ -25,48 +26,16 @@ class Valuutad:
             #self.sõnastik[rida["name"]] = float(rida["rate"])
             self.sõnastik[rida["code"]] = float(rida["rate"])
 
+        self.krüptos = Krüptod().getKrüptos()
+        for key in self.krüptos:
+            self.sõnastik[key] = 1/self.krüptos[key]
+
         return self.sõnastik
     #Tagastab aja, millest kursid pärit on.
     def getDate(self):
         self.kuupäev = self.data["eur"]["date"]
 
         return self.kuupäev
-
-class Graafik(QMainWindow):
-    
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Graafik")
-        self.graphWidget = pg.PlotWidget()
-        self.setCentralWidget(self.graphWidget)
-
-        self.pen = pg.mkPen(color=(255, 0, 0), width=2, style=QtCore.Qt.SolidLine)
-        self.graphWidget.setBackground('w')
-
-        #pealkiri, teljed
-        self.graphWidget.setTitle("Viimase 7 päeva kurss", color="b", size="15pt")
-        self.graphWidget.setLabel('left', 'Kurss')
-        self.graphWidget.setLabel('bottom', 'Kuupäev')
-        
-        self.lastweek = self.getLastWeek()
-        print(self.lastweek)
-
-        #andmed ja x,y telg, praegu lihtsalt suvalised nr
-        self.hour = [1,2,3,4,5,6,7,8]
-        self.temperature = [30,32,34,32,33,31,29,99]
-        self.graphWidget.plot(self.hour, self.temperature, pen=self.pen)
-        
-    def getLastWeek(self):
-        self.viimane_nädal = []
-
-        for i in range(0,7):
-            self.today = datetime.date.today()
-            self.ago = self.today - datetime.timedelta(days=i)
-            self.viimane_nädal.append(self.ago)
-
-            self.viimane_nädal.reverse()
-        
-        return self.viimane_nädal
 
 class GUI(QMainWindow): 
 
@@ -118,7 +87,7 @@ class GUI(QMainWindow):
 
         self.graafikNupp = QPushButton("Graafik", self)
         self.graafikNupp.resize(50,25)
-        self.graafikNupp.clicked.connect(self.graafikuaken)
+        self.graafikNupp.clicked.connect(self.graafik)
 
         #Lisame kõik nupud, kastid ekraanile.
         self.grid.addWidget(self.date_label,0,2,2,2)
@@ -145,7 +114,7 @@ class GUI(QMainWindow):
         self.parem_valuutakurss = self.valuutakursid[self.parem_valikukast.currentText()]
 
         try:
-            if self.vasak_valikukast.currentText() != "U.S Dollar":
+            if self.vasak_valikukast.currentText() != "USD":
                 #Teisendame alguses dollariks, seejärel soovitud valuutaks.
                 self.to_usd = float(self.input_väärtus) / self.valuutakursid[self.vasak_valikukast.currentText()]
                 self.vastus = str(round(float(self.to_usd * self.parem_valuutakurss), 3))
@@ -158,11 +127,26 @@ class GUI(QMainWindow):
         except:
             print("error")
 
-    def graafikuaken(self):
-        self.w = Graafik()
-        self.w.show()
-        #self.hide() peidab esialgse akna nuppu vajutades ära.
-        #self.hide()
+    def getLastWeek(self):
+        self.viimane_nädal = []
+
+        for i in range(0,7):
+            today = dt.date.today()
+            ago = today - dt.timedelta(days=i)
+            self.viimane_nädal.append(ago)
+
+        #self.viimane_nädal.reverse()
+        
+        return sorted(self.viimane_nädal)
+
+    def graafik(self):
+        self.dates = self.getLastWeek()
+        self.xpoints = [d.strftime("%m/%d/%Y") for d in self.dates]
+        self.ypoints = [1,2,3,4,5,6,7]
+
+        plt.plot(self.xpoints, self.ypoints)
+        plt.gcf().autofmt_xdate()
+        plt.show()
 
 def rakendus():
     #sys.argv on järjend, mis sisaldab käsurea argumente, võiks panna ka [].
