@@ -75,8 +75,8 @@ class GUI(QMainWindow):
         super().__init__()
         #Pealkiri, mõõtmed ja taustavärv.
         self.pealkiri = "Valuutakursside kalkulaator"
-        self.laius = 640
-        self.kõrgus = 120
+        self.laius = 800
+        self.kõrgus = 200
         self.setWindowTitle(self.pealkiri)
         self.setGeometry(10, 10, 0, 0)
         self.setFixedWidth(self.laius)
