@@ -6,6 +6,7 @@ import requests
 import datetime as dt
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import json
 from krüpto import *
 
 class Valuutad:
@@ -142,11 +143,45 @@ class GUI(QMainWindow):
     def graafik(self):
         self.dates = self.getLastWeek()
         self.xpoints = [d.strftime("%m/%d/%Y") for d in self.dates]
-        self.ypoints = [1,2,3,4,5,6,7]
+        self.ypoints = []
+        self.PRIVATE_KEY = ""
+        headers = {"accept": "application/json"}
+        if self.PRIVATE_KEY:
+            leftchoice = self.vasak_valikukast.currentText()
+            rightchoice = self.parem_valikukast.currentText()
 
-        plt.plot(self.xpoints, self.ypoints)
-        plt.gcf().autofmt_xdate()
-        plt.show()
+            for päev in self.dates:
+                url = f"https://openexchangerates.org/api/historical/{päev}.json?app_id={self.PRIVATE_KEY}"
+                response = requests.get(url, headers=headers)
+                response = response.text
+                result = json.loads(response)
+                result = result["rates"]
+                
+                if leftchoice not in result.keys() or rightchoice not in result.keys():
+                    leftchoice = leftchoice[-3:]
+                    rightchoice = rightchoice[-3:]
+                try:
+                    if leftchoice == "USD":
+                        self.ypoints.append(result[leftchoice]*result[rightchoice])
+                    else:
+                        self.ypoints.append((1/result[leftchoice])*result[rightchoice])
+                except:
+                    pass
+            try:
+                if leftchoice != "USD":
+                    plt.title(f"{leftchoice} kurss {rightchoice} suhtes\n1 {leftchoice} on {round((1/result[leftchoice])*result[rightchoice], 2)} {rightchoice}")
+                else:
+                    plt.title(f"{leftchoice} kurss {rightchoice} suhtes\n1 {leftchoice} on {round(result[leftchoice]*result[rightchoice], 2)} {rightchoice}")
+        
+                plt.xlabel("Kuupäev")
+                plt.ylabel("Kurss")
+                plt.plot(self.xpoints, self.ypoints)
+                plt.gcf().autofmt_xdate()
+                plt.show()
+            except:
+                pass
+        else:
+            print("Private key on puudu.")
 
 def rakendus():
     #sys.argv on järjend, mis sisaldab käsurea argumente, võiks panna ka [].
