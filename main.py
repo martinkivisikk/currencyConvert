@@ -154,6 +154,7 @@ class GUI(QMainWindow):
                 url = f"https://openexchangerates.org/api/historical/{päev}.json?app_id={self.PRIVATE_KEY}"
                 response = requests.get(url, headers=headers)
                 response = response.text
+                #Teisendame teksti sõnastikuks.
                 result = json.loads(response)
                 result = result["rates"]
                 
